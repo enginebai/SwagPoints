@@ -8,7 +8,6 @@
         <attr name="step" format="integer"/>
 
         <attr name="indicatorIcon" format="reference"/>
-        <attr name="indicatorOffset" format="dimension"/>
 
         <attr name="progressWidth" format="dimension"/>
         <attr name="progressColor" format="color"/>
