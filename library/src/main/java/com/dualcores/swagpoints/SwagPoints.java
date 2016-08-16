@@ -2,11 +2,13 @@ package com.dualcores.swagpoints;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 import android.view.View;
 
 /**
@@ -16,6 +18,10 @@ public class SwagPoints extends View {
 
 	public static final int MAX = 100;
 	public static final int MIN = 0;
+	/**
+	 * Offset = -90 indicates that the progress starts from 12 o'clock.
+	 */
+	private static final int ANGLE_OFFSET = -90;
 
 	/**
 	 * The current progress value.
@@ -224,4 +230,47 @@ public class SwagPoints extends View {
 
 		void onStopTrackingTouch(SwagPoints swagPoints);
 	}
+
+	@Override
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		final int width = getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec);
+		final int height = getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec);
+		final int min = Math.min(width, height);
+
+		mTranslateX = (int)(width * 0.5f);
+		mTranslateY = (int)(height * 0.5f);
+
+		int arcDiameter = min - getPaddingLeft();
+		mArcRadius = arcDiameter / 2;
+		float top = height / 2 - mArcRadius;
+		float left = width / 2 - mArcRadius;
+		mArcRect.set(left, top, left + arcDiameter, top + arcDiameter);
+
+		int arcStart = (int)mProgressSweep + mStartAngle + mRotation + 90;
+		mIndicatorIconX = (int)(mArcRadius * Math.cos(Math.toRadians(arcStart)));
+		mIndicatorIconY = (int)(mArcRadius * Math.sin(Math.toRadians(arcStart)));
+
+		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+	}
+
+	@Override
+	protected void onDraw(Canvas canvas) {
+		super.onDraw(canvas);
+
+		if (!mClosewise)
+			canvas.scale(-1, 1, mArcRect.centerX(), mArcRect.centerY());
+
+		// draw the arc and progress
+		final int arcStart = mStartAngle + mRotation + ANGLE_OFFSET;
+		final int arcSweep = mSweepAngle;
+		canvas.drawArc(mArcRect, arcStart, arcSweep, false, mArcPaint);
+		canvas.drawArc(mArcRect, arcStart, mProgressSweep, false, mProgressPaint);
+
+		// draw the indicator icon
+		if (mEnabled) {
+			canvas.translate(mTranslateX - mIndicatorIconX, mTranslateY - mIndicatorIconY);
+			mIndicatorIcon.draw(canvas);
+		}
+	}
+
 }
