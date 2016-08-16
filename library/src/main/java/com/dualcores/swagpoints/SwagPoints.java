@@ -442,4 +442,98 @@ public class SwagPoints extends View {
 		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(arcStart)));
 		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(arcStart)));
 	}
+
+	public int getPoints() {
+		return mPoints;
+	}
+
+	public void setPoints(int points) {
+		mPoints = points;
+	}
+
+	public int getMax() {
+		return mMax;
+	}
+
+	public void setMax(int max) {
+		mMax = max;
+	}
+
+	public int getMin() {
+		return mMin;
+	}
+
+	public void setMin(int min) {
+		mMin = min;
+	}
+
+	public int getStep() {
+		return mStep;
+	}
+
+	public void setStep(int step) {
+		mStep = step;
+	}
+
+	public Drawable getIndicatorIcon() {
+		return mIndicatorIcon;
+	}
+
+	public void setIndicatorIcon(Drawable indicatorIcon) {
+		mIndicatorIcon = indicatorIcon;
+	}
+
+	public int getProgressWidth() {
+		return mProgressWidth;
+	}
+
+	public void setProgressWidth(int progressWidth) {
+		mProgressWidth = progressWidth;
+	}
+
+	public int getProgressColor() {
+		return mProgressColor;
+	}
+
+	public void setProgressColor(int progressColor) {
+		mProgressColor = progressColor;
+	}
+
+	public int getArcColor() {
+		return mArcColor;
+	}
+
+	public void setArcColor(int arcColor) {
+		mArcColor = arcColor;
+	}
+
+	public int getArcWidth() {
+		return mArcWidth;
+	}
+
+	public void setArcWidth(int arcWidth) {
+		mArcWidth = arcWidth;
+	}
+
+	public boolean isClosewise() {
+		return mClosewise;
+	}
+
+	public void setClosewise(boolean closewise) {
+		mClosewise = closewise;
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return mEnabled;
+	}
+
+	@Override
+	public void setEnabled(boolean enabled) {
+		mEnabled = enabled;
+	}
+
+	public void setOnSwagPointsChangeListener(OnSwagPointsChangeListener onSwagPointsChangeListener) {
+		mOnSwagPointsChangeListener = onSwagPointsChangeListener;
+	}
 }
