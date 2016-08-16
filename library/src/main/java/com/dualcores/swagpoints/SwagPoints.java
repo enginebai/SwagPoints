@@ -16,6 +16,7 @@ import android.view.View;
  */
 public class SwagPoints extends View {
 
+	public static final int INVALID_VALUE = -1;
 	public static final int MAX = 100;
 	public static final int MIN = 0;
 	/**
@@ -145,7 +146,7 @@ public class SwagPoints extends View {
 
 		mArcColor = ContextCompat.getColor(context, R.color.color_arc);
 		mProgressColor = ContextCompat.getColor(context, R.color.color_progress);
-		mProgressWidth = (int)(mProgressWidth * density);
+		mProgressWidth = (int) (mProgressWidth * density);
 
 		mIndicatorIcon = ContextCompat.getDrawable(context, R.drawable.indicator);
 
@@ -167,11 +168,11 @@ public class SwagPoints extends View {
 			mMax = array.getInteger(R.styleable.SwagPoints_max, mMax);
 			mStep = array.getInteger(R.styleable.SwagPoints_step, mStep);
 			mPoints = array.getInteger(R.styleable.SwagPoints_points, mPoints);
-			mProgressWidth = (int)array.getDimension(
+			mProgressWidth = (int) array.getDimension(
 					R.styleable.SwagPoints_progressWidth, mProgressWidth);
 			mProgressColor = array.getColor(R.styleable.SwagPoints_progressColor, mProgressColor);
 
-			mArcWidth = (int)array.getDimension(R.styleable.SwagPoints_arcWidth, mArcWidth);
+			mArcWidth = (int) array.getDimension(R.styleable.SwagPoints_arcWidth, mArcWidth);
 			mArcColor = array.getColor(R.styleable.SwagPoints_arcColor, mArcColor);
 
 			mEnabled = array.getBoolean(R.styleable.SwagPoints_enabled, mEnabled);
@@ -207,7 +208,7 @@ public class SwagPoints extends View {
 		mStartAngle = mStartAngle > 360 ? 360 : mStartAngle;
 		mStartAngle = mStartAngle < 0 ? 0 : mStartAngle;
 
-		mProgressSweep = (float)mPoints / mMax * mSweepAngle;
+		mProgressSweep = (float) mPoints / mMax * mSweepAngle;
 
 		if (mRoundEdges) {
 			mArcPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -220,9 +221,9 @@ public class SwagPoints extends View {
 		/**
 		 * Notification that the point value has changed.
 		 *
-		 * @param swagPoints    The SwagPoints view whose value has changed
-		 * @param point         The current point value.
-		 * @param fromUser      True if the point change was triggered by the user.
+		 * @param swagPoints The SwagPoints view whose value has changed
+		 * @param point      The current point value.
+		 * @param fromUser   True if the point change was triggered by the user.
 		 */
 		void onPointsChanged(SwagPoints swagPoints, int point, boolean fromUser);
 
@@ -237,8 +238,8 @@ public class SwagPoints extends View {
 		final int height = getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec);
 		final int min = Math.min(width, height);
 
-		mTranslateX = (int)(width * 0.5f);
-		mTranslateY = (int)(height * 0.5f);
+		mTranslateX = (int) (width * 0.5f);
+		mTranslateY = (int) (height * 0.5f);
 
 		int arcDiameter = min - getPaddingLeft();
 		mArcRadius = arcDiameter / 2;
@@ -246,9 +247,7 @@ public class SwagPoints extends View {
 		float left = width / 2 - mArcRadius;
 		mArcRect.set(left, top, left + arcDiameter, top + arcDiameter);
 
-		int arcStart = (int)mProgressSweep + mStartAngle + mRotation + 90;
-		mIndicatorIconX = (int)(mArcRadius * Math.cos(Math.toRadians(arcStart)));
-		mIndicatorIconY = (int)(mArcRadius * Math.sin(Math.toRadians(arcStart)));
+		updateIndicatorIconPosition();
 
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 	}
@@ -273,4 +272,174 @@ public class SwagPoints extends View {
 		}
 	}
 
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		if (mEnabled) {
+			// 阻止父View去攔截onTouchEvent()事件，確保touch事件可以正確傳遞到此層View。
+			this.getParent().requestDisallowInterceptTouchEvent(true);
+			switch (event.getAction()) {
+				case MotionEvent.ACTION_DOWN:
+					if (mOnSwagPointsChangeListener != null)
+						mOnSwagPointsChangeListener.onStartTackingTouch(this);
+					updateOnTouch(event);
+					break;
+
+				case MotionEvent.ACTION_MOVE:
+					updateOnTouch(event);
+					break;
+
+				case MotionEvent.ACTION_UP:
+					if (mOnSwagPointsChangeListener != null)
+						mOnSwagPointsChangeListener.onStopTrackingTouch(this);
+					updateOnTouch(event);
+					this.getParent().requestDisallowInterceptTouchEvent(false);
+					break;
+
+				case MotionEvent.ACTION_CANCEL:
+					if (mOnSwagPointsChangeListener != null)
+						mOnSwagPointsChangeListener.onStartTackingTouch(this);
+					setPressed(false);
+					this.getParent().requestDisallowInterceptTouchEvent(false);
+					break;
+			}
+		}
+		return super.onTouchEvent(event);
+	}
+
+	/**
+	 * Update all the UI components on touch.
+	 *
+	 * @param event MotionEvent
+	 */
+	private void updateOnTouch(MotionEvent event) {
+		setPressed(true);
+		mTouchAngle = convertTouchEventPointToAngle(event.getX(), event.getY());
+		int progress = convertAngleToProgress(mTouchAngle);
+		updatePoints(progress, true);
+	}
+
+	/**
+	 * Convert coordinates to degree of arc.
+	 *
+	 * @param eventX touch point x
+	 * @param eventY touch point y
+	 * @return degree of arc.
+	 */
+	private double convertTouchEventPointToAngle(float eventX, float eventY) {
+
+		// transform touch coordinate into component coordinate
+		float x = eventX - mTranslateY;
+		float y = eventY - mTranslateY;
+
+		x = mClosewise ? x : -x;
+		double angle = Math.toDegrees(Math.atan2(y, x) + (Math.PI / 2) - Math.toRadians(mRotation));
+		angle = (angle < 0) ? (angle + 360) : angle;
+		angle -= mStartAngle;
+		return angle;
+	}
+
+	private int convertAngleToProgress(double touchAngle) {
+		int touchProgress = (int) (Math.round(getPointsPerDegree() * touchAngle));
+		touchProgress = (touchProgress < mMin) ? INVALID_VALUE : touchProgress;
+		touchProgress = (touchProgress > mMax) ? INVALID_VALUE : touchProgress;
+		return touchProgress;
+	}
+
+	/**
+	 * Get the points difference per degree of arc.
+	 *
+	 * @return points per degree
+	 */
+	private float getPointsPerDegree() {
+		return (float) (mMax - mMin) / mSweepAngle;
+	}
+
+	private void updatePoints(int progress, boolean isFromUser) {
+
+		// detect points change closed to max or min
+		final int maxDetectPoints = (int) ((double) mMax * 0.95);
+		final int minDetectPoints = (int) ((double) mMin * 0.05) + mMin;
+
+		mUpdateTimes++;
+		if (progress == INVALID_VALUE)
+			return;
+
+		// avoid accidentally touch to become max from original point
+		// 避免在靠近原點點到直接變成最大值
+		if (progress > maxDetectPoints && mPreviousProgress == INVALID_VALUE)
+			return;
+
+		if (mPreviousProgress != mCurrentProgress)
+			System.out.printf("Progress (%d)(%f) %d -> %d (%s, %s)\n",
+					progress, mTouchAngle,
+					mPreviousProgress, mCurrentProgress,
+					isMax ? "Max" : "",
+					isMin ? "Min" : "");
+
+		// record previous and current progress change
+		if (mUpdateTimes == 1)
+			mCurrentProgress = progress;
+		else {
+			mPreviousProgress = mCurrentProgress;
+			mCurrentProgress = progress;
+		}
+
+		/**
+		 * Determine whether reach max or min to lock point update event.
+		 *
+		 * When reaching max, the progress will drop from max (or maxDetectPoints ~ max
+		 * to min (or min ~ minDetectPoints) and vice versa.
+		 *
+		 * If reach max or min, stop increasing / decreasing to avoid exceeding the max / min.
+		 */
+		// 判斷超過最大值或最小值，最大最小值不重複判斷
+		// 用數值範圍判斷預防轉太快直接略過最大最小值。
+		// progress變化可能從98 -> 0/1 or 0/1 -> 98/97，而不會過0或100
+		if (mUpdateTimes > 1 && !isMin && !isMax) {
+			if (mPreviousProgress >= maxDetectPoints && mCurrentProgress <= minDetectPoints &&
+					mPreviousProgress > mCurrentProgress) {
+				isMax = true;
+				progress = mMax;
+				if (mOnSwagPointsChangeListener != null) {
+					mOnSwagPointsChangeListener.onPointsChanged(this, progress, isFromUser);
+					return;
+				}
+			} else if (mCurrentProgress >= maxDetectPoints && mPreviousProgress <= minDetectPoints &&
+					mCurrentProgress > mPreviousProgress) {
+				isMin = true;
+				progress = mMin;
+				if (mOnSwagPointsChangeListener != null) {
+					mOnSwagPointsChangeListener.onPointsChanged(this, progress, isFromUser);
+					return;
+				}
+			}
+		}
+
+		// Detect whether decreasing from max or increasing from min, to unlock the update event.
+		// Make sure to check in detect range only.
+		if (isMax && (mCurrentProgress < mPreviousProgress) && mCurrentProgress >= maxDetectPoints)
+			isMax = false;
+		if (isMin && (mPreviousProgress < mCurrentProgress) && mPreviousProgress <= minDetectPoints)
+			isMin = false;
+
+		if (!isMax && !isMin) {
+			progress = (progress > mMax) ? mMax : progress;
+			progress = (progress < mMin) ? mMin : progress;
+			mPoints = progress;
+
+			if (mOnSwagPointsChangeListener != null) {
+				progress = progress - (progress % mStep);
+				mOnSwagPointsChangeListener.onPointsChanged(this, progress, isFromUser);
+			}
+			mProgressSweep = (float)progress / mMax * mSweepAngle;
+			updateIndicatorIconPosition();
+			invalidate();
+		}
+	}
+
+	private void updateIndicatorIconPosition() {
+		int arcStart = (int) mProgressSweep + mStartAngle + mRotation + 90;
+		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(arcStart)));
+		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(arcStart)));
+	}
 }
