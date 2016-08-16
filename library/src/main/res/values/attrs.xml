@@ -24,6 +24,9 @@
         <attr name="rotation" format="integer"/>
         <attr name="startAngle" format="integer"/>
         <attr name="touchInside" format="boolean"/>
+    </declare-styleable>
 
+    <declare-styleable name="SwagPointsTheme">
+        <attr name="swagPointsStyle" format="reference"/>
     </declare-styleable>
 </resources>
