@@ -302,8 +302,9 @@ public class SwagPoints extends View {
 					this.getParent().requestDisallowInterceptTouchEvent(false);
 					break;
 			}
+			return true;
 		}
-		return super.onTouchEvent(event);
+		return false;
 	}
 
 	/**
@@ -314,6 +315,7 @@ public class SwagPoints extends View {
 	private void updateOnTouch(MotionEvent event) {
 		setPressed(true);
 		mTouchAngle = convertTouchEventPointToAngle(event.getX(), event.getY());
+//		Log.d(this.getClass().getSimpleName(), "Touch angle = " + mTouchAngle);
 		int progress = convertAngleToProgress(mTouchAngle);
 		updatePoints(progress, true);
 	}
@@ -330,6 +332,7 @@ public class SwagPoints extends View {
 		// transform touch coordinate into component coordinate
 		float x = eventX - mTranslateY;
 		float y = eventY - mTranslateY;
+//		System.out.printf("%.2f, %.2f\n", x, y);
 
 		x = mClosewise ? x : -x;
 		double angle = Math.toDegrees(Math.atan2(y, x) + (Math.PI / 2) - Math.toRadians(mRotation));
@@ -361,6 +364,7 @@ public class SwagPoints extends View {
 		final int minDetectPoints = (int) ((double) mMin * 0.05) + mMin;
 
 		mUpdateTimes++;
+//		System.out.printf("Progress = %d\n", progress);
 		if (progress == INVALID_VALUE)
 			return;
 
@@ -441,6 +445,16 @@ public class SwagPoints extends View {
 		int arcStart = (int) mProgressSweep + mStartAngle + mRotation + 90;
 		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(arcStart)));
 		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(arcStart)));
+	}
+
+	@Override
+	protected void drawableStateChanged() {
+		super.drawableStateChanged();
+		if (mIndicatorIcon != null && mIndicatorIcon.isStateful()) {
+			int[] states = getDrawableState();
+			mIndicatorIcon.setState(states);
+		}
+		invalidate();
 	}
 
 	public int getPoints() {
