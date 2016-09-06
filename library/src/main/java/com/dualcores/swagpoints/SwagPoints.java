@@ -200,7 +200,7 @@ public class SwagPoints extends View {
 		mProgressPaint.setColor(mProgressColor);
 		mProgressPaint.setAntiAlias(true);
 		mProgressPaint.setStyle(Paint.Style.STROKE);
-		mProgressPaint.setColor(mProgressColor);
+		mProgressPaint.setStrokeWidth(mProgressWidth);
 
 		mSweepAngle = mSweepAngle > 360 ? 360 : mSweepAngle;
 		mSweepAngle = mSweepAngle < 0 ? 0 : mSweepAngle;
@@ -387,6 +387,11 @@ public class SwagPoints extends View {
 			mPreviousProgress = mCurrentProgress;
 			mCurrentProgress = progress;
 		}
+
+		if (mPreviousProgress == mCurrentProgress)
+			return;
+
+		System.out.printf("New value (%d -> %d)\n", mPreviousProgress, mCurrentProgress);
 
 		/**
 		 * Determine whether reach max or min to lock point update event.

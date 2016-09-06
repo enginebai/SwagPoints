@@ -20,6 +20,7 @@
             android:layout_width="match_parent"
             swagpoints:arcColor="@android:color/white"
             swagpoints:progressColor="@color/colorPrimary"
+            swagpoints:progressWidth="8dp"
             android:padding="40dp"
             />
         <TextView
