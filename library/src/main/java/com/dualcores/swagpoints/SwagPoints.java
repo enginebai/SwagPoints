@@ -8,137 +8,126 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 public class SwagPoints extends View {
 
-	private static final String TAG = SwagPoints.class.getSimpleName();
-	private static int INVALID_PROGRESS_VALUE = -1;
-	// The initial rotational offset -90 means we start at 12 o'clock
-	private final int mAngleOffset = -90;
+	public static int INVALID_VALUE = -1;
+	public static final int MAX = 100;
+	public static final int MIN = 0;
 
 	/**
-	 * The Drawable for the seek arc thumbnail
+	 * Offset = -90 indicates that the progress starts from 12 o'clock.
 	 */
-	private Drawable mThumb;
+	private static final int ANGLE_OFFSET = -90;
 
-	private int mMin = 0;
+	/**
+	 * The current points value.
+	 */
+	private int mPoints = MIN;
+
+	/**
+	 * The min value of progress value.
+	 */
+	private int mMin = MIN;
 
 	/**
 	 * The Maximum value that this SeekArc can be set to
 	 */
-	private int mMax = 100;
+	private int mMax = MAX;
 
 	/**
-	 * The Current value that the SeekArc is set to
+	 * The increment/decrement value for each movement of progress.
 	 */
-	private int mProgress = 0;
+	private int mStep = 10;
 
 	/**
-	 * The width of the progress line for this SeekArc
+	 * The Drawable for the seek arc thumbnail
+	 */
+	private Drawable mIndicatorIcon;
+
+
+	/**
+	 * The line width of progress.
 	 */
 	private int mProgressWidth = 4;
+	private int mProgressColor;
+
+	private int mArcColor;
+	private int mArcWidth = 4;
+
+	private boolean mClockwise = true;
+	private boolean mEnabled = true;
 
 	/**
-	 * The Width of the background arc for the SeekArc
-	 */
-	private int mArcWidth = 2;
-
-	/**
-	 * The Angle to start drawing this Arc from
-	 */
-	private int mStartAngle = 0;
-
-	/**
-	 * The Angle through which to draw the arc (Max is 360)
-	 */
-	private int mSweepAngle = 360;
-
-	/**
-	 * The rotation of the SeekArc- 0 is twelve o'clock
-	 */
-	private int mRotation = 0;
-
-	/**
-	 * Give the SeekArc rounded edges
+	 * @deprecated
 	 */
 	private boolean mRoundedEdges = false;
 
 	/**
-	 * Enable touch inside the SeekArc
+	 * @deprecated
+	 */
+	private int mSweepAngle = 360;
+
+	/**
+	 * @deprecated
+	 */
+	private int mRotation = 0;
+
+	/**
+	 * @deprecated
+	 */
+	private int mStartAngle = 0;
+
+	/**
+	 * @deprecated
 	 */
 	private boolean mTouchInside = true;
 
+	//
+	// internal variables
+	//
 	/**
-	 * Will the progress increase clockwise or anti-clockwise
+	 * The counts of point update to determine whether to change previous progress.
 	 */
-	private boolean mClockwise = true;
-
-
-	/**
-	 * is the control enabled/touchable
-	 */
-	private boolean mEnabled = true;
-
-	/**
-	 * 滑動後，增減的數值變化。
-	 */
-	private int mStep = 10;
-
-	// Internal variables
-	private int mArcRadius = 0;
-	private float mProgressSweep = 0;
-	private RectF mArcRect = new RectF();
-	private Paint mArcPaint;
-	private Paint mProgressPaint;
-	private int mTranslateX;
-	private int mTranslateY;
-	private int mThumbXPos;
-	private int mThumbYPos;
-	private double mTouchAngle;
-	private float mTouchIgnoreRadius;
-	private OnSeekArcChangeListener mOnSeekArcChangeListener;
-
-	// 計算progress更新的次數
 	private int mUpdateTimes = 0;
 	private float mPreviousProgress = -1;
 	private float mCurrentProgress = 0;
 
+	/**
+	 * Determine whether reach max of point.
+	 */
 	private boolean isMax = false;
+
+	/**
+	 * Determine whether reach min of point.
+	 */
 	private boolean isMin = false;
 
-	public interface OnSeekArcChangeListener {
+	private int mArcRadius = 0;
+	private RectF mArcRect = new RectF();
+	private Paint mArcPaint;
 
-		/**
-		 * Notification that the progress level has changed. Clients can use the
-		 * fromUser parameter to distinguish user-initiated changes from those
-		 * that occurred programmatically.
-		 *
-		 * @param swagPoints  The SeekArc whose progress has changed
-		 * @param progress The current progress level. This will be in the range
-		 *                 0..max where max was set by
-		 * @param fromUser True if the progress change was initiated by the user.
-		 */
-		void onProgressChanged(SwagPoints swagPoints, int progress, boolean fromUser);
+	/**
+	 * @deprecated
+	 */
+	private float mProgressSweep = 0;
+	private Paint mProgressPaint;
 
-		/**
-		 * Notification that the user has started a touch gesture. Clients may
-		 * want to use this to disable advancing the seekbar.
-		 *
-		 * @param swagPoints The SeekArc in which the touch gesture began
-		 */
-		void onStartTrackingTouch(SwagPoints swagPoints);
+	private int mTranslateX;
+	private int mTranslateY;
 
-		/**
-		 * Notification that the user has finished a touch gesture. Clients may
-		 * want to use this to re-enable advancing the seekarc.
-		 *
-		 * @param swagPoints The SeekArc in which the touch gesture began
-		 */
-		void onStopTrackingTouch(SwagPoints swagPoints);
-	}
+	// the (x, y) coordinator of indicator icon
+	private int mIndicatorIconX;
+	private int mIndicatorIconY;
+
+	/**
+	 * The current touch angle of arc.
+	 */
+	private double mTouchAngle;
+	private float mTouchIgnoreRadius;
+	private OnSwagPointsChangeListener mOnSwagPointsChangeListener;
 
 	public SwagPoints(Context context) {
 		super(context);
@@ -157,7 +146,6 @@ public class SwagPoints extends View {
 
 	private void init(Context context, AttributeSet attrs, int defStyle) {
 
-		Log.d(TAG, "Initialising SeekArc");
 		final Resources res = getResources();
 		float density = context.getResources().getDisplayMetrics().density;
 
@@ -166,7 +154,7 @@ public class SwagPoints extends View {
 		int progressColor = res.getColor(R.color.color_progress);
 		int thumbHalfheight = 0;
 		int thumbHalfWidth = 0;
-		mThumb = res.getDrawable(R.drawable.indicator);
+		mIndicatorIcon = res.getDrawable(R.drawable.indicator);
 		// Convert progress width to pixels for current density
 		mProgressWidth = (int) (mProgressWidth * density);
 
@@ -178,17 +166,17 @@ public class SwagPoints extends View {
 
 			Drawable thumb = a.getDrawable(R.styleable.SwagPoints_indicatorIcon);
 			if (thumb != null) {
-				mThumb = thumb;
+				mIndicatorIcon = thumb;
 			}
 
-			thumbHalfheight = (int) mThumb.getIntrinsicHeight() / 2;
-			thumbHalfWidth = (int) mThumb.getIntrinsicWidth() / 2;
-			mThumb.setBounds(-thumbHalfWidth, -thumbHalfheight, thumbHalfWidth,
+			thumbHalfheight = (int) mIndicatorIcon.getIntrinsicHeight() / 2;
+			thumbHalfWidth = (int) mIndicatorIcon.getIntrinsicWidth() / 2;
+			mIndicatorIcon.setBounds(-thumbHalfWidth, -thumbHalfheight, thumbHalfWidth,
 					thumbHalfheight);
 
 			mMin = a.getInteger(R.styleable.SwagPoints_min, mMin);
 			mMax = a.getInteger(R.styleable.SwagPoints_max, mMax);
-			mProgress = a.getInteger(R.styleable.SwagPoints_points, mProgress);
+			mPoints = a.getInteger(R.styleable.SwagPoints_points, mPoints);
 			mProgressWidth = (int) a.getDimension(
 					R.styleable.SwagPoints_progressWidth, mProgressWidth);
 			mArcWidth = (int) a.getDimension(R.styleable.SwagPoints_arcWidth,
@@ -215,9 +203,9 @@ public class SwagPoints extends View {
 		mSweepAngle = (mSweepAngle > 360) ? 360 : mSweepAngle;
 		mSweepAngle = (mSweepAngle < 0) ? 0 : mSweepAngle;
 
-		mProgressSweep = (float) mProgress / mMax * mSweepAngle;
-		mProgress = (mProgress > mMax) ? mMax : mProgress;
-		mProgress = (mProgress < mMin) ? mMin : mProgress;
+		mProgressSweep = (float) mPoints / mMax * mSweepAngle;
+		mPoints = (mPoints > mMax) ? mMax : mPoints;
+		mPoints = (mPoints < mMin) ? mMin : mPoints;
 
 		mStartAngle = (mStartAngle > 360) ? 0 : mStartAngle;
 		mStartAngle = (mStartAngle < 0) ? 0 : mStartAngle;
@@ -248,7 +236,7 @@ public class SwagPoints extends View {
 		}
 
 		// Draw the arcs
-		final int arcStart = mStartAngle + mAngleOffset + mRotation;
+		final int arcStart = mStartAngle + ANGLE_OFFSET + mRotation;
 		final int arcSweep = mSweepAngle;
 		canvas.drawArc(mArcRect, arcStart, arcSweep, false, mArcPaint);
 		canvas.drawArc(mArcRect, arcStart, mProgressSweep, false,
@@ -256,8 +244,8 @@ public class SwagPoints extends View {
 
 		if (mEnabled) {
 			// Draw the thumb nail
-			canvas.translate(mTranslateX - mThumbXPos, mTranslateY - mThumbYPos);
-			mThumb.draw(canvas);
+			canvas.translate(mTranslateX - mIndicatorIconX, mTranslateY - mIndicatorIconY);
+			mIndicatorIcon.draw(canvas);
 		}
 	}
 
@@ -281,8 +269,8 @@ public class SwagPoints extends View {
 		mArcRect.set(left, top, left + arcDiameter, top + arcDiameter);
 
 		int arcStart = (int) mProgressSweep + mStartAngle + mRotation + 90;
-		mThumbXPos = (int) (mArcRadius * Math.cos(Math.toRadians(arcStart)));
-		mThumbYPos = (int) (mArcRadius * Math.sin(Math.toRadians(arcStart)));
+		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(arcStart)));
+		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(arcStart)));
 
 		setTouchInSide(mTouchInside);
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -320,22 +308,22 @@ public class SwagPoints extends View {
 	@Override
 	protected void drawableStateChanged() {
 		super.drawableStateChanged();
-		if (mThumb != null && mThumb.isStateful()) {
+		if (mIndicatorIcon != null && mIndicatorIcon.isStateful()) {
 			int[] state = getDrawableState();
-			mThumb.setState(state);
+			mIndicatorIcon.setState(state);
 		}
 		invalidate();
 	}
 
 	private void onStartTrackingTouch() {
-		if (mOnSeekArcChangeListener != null) {
-			mOnSeekArcChangeListener.onStartTrackingTouch(this);
+		if (mOnSwagPointsChangeListener != null) {
+			mOnSwagPointsChangeListener.onStartTrackingTouch(this);
 		}
 	}
 
 	private void onStopTrackingTouch() {
-		if (mOnSeekArcChangeListener != null) {
-			mOnSeekArcChangeListener.onStopTrackingTouch(this);
+		if (mOnSwagPointsChangeListener != null) {
+			mOnSwagPointsChangeListener.onStopTrackingTouch(this);
 		}
 	}
 
@@ -382,9 +370,9 @@ public class SwagPoints extends View {
 	private int getProgressForAngle(double angle) {
 		int touchProgress = (int) Math.round(valuePerDegree() * angle);
 
-		touchProgress = (touchProgress < mMin) ? INVALID_PROGRESS_VALUE
+		touchProgress = (touchProgress < mMin) ? INVALID_VALUE
 				: touchProgress;
-		touchProgress = (touchProgress > mMax) ? INVALID_PROGRESS_VALUE
+		touchProgress = (touchProgress > mMax) ? INVALID_VALUE
 				: touchProgress;
 		return touchProgress;
 	}
@@ -399,8 +387,8 @@ public class SwagPoints extends View {
 
 	private void updateThumbPosition() {
 		int thumbAngle = (int) (mStartAngle + mProgressSweep + mRotation + 90);
-		mThumbXPos = (int) (mArcRadius * Math.cos(Math.toRadians(thumbAngle)));
-		mThumbYPos = (int) (mArcRadius * Math.sin(Math.toRadians(thumbAngle)));
+		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(thumbAngle)));
+		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(thumbAngle)));
 	}
 
 	private void updateProgress(int progress, boolean fromUser) {
@@ -411,12 +399,12 @@ public class SwagPoints extends View {
 //		System.out.printf("(%d, %d) / (%d, %d)\n", mMax, mMin, maxDetectValue, minDetectValue);
 
 		mUpdateTimes++;
-		if (progress == INVALID_PROGRESS_VALUE) {
+		if (progress == INVALID_VALUE) {
 			return;
 		}
 
 		// 預防在靠近原點點到直接變成最大值
-		if (progress > maxDetectValue && mPreviousProgress == INVALID_PROGRESS_VALUE) {
+		if (progress > maxDetectValue && mPreviousProgress == INVALID_VALUE) {
 //			System.out.printf("Skip (%d) %.0f -> %.0f %s\n",
 //					progress, mPreviousProgress, mCurrentProgress, isMax ? "Max" : "");
 			return;
@@ -448,9 +436,9 @@ public class SwagPoints extends View {
 				isMax = true;
 				progress = mMax;
 //				Logger.d("Reach Max " + progress);
-				if (mOnSeekArcChangeListener != null) {
-					mOnSeekArcChangeListener
-							.onProgressChanged(this, progress, fromUser);
+				if (mOnSwagPointsChangeListener != null) {
+					mOnSwagPointsChangeListener
+							.onPointsChanged(this, progress, fromUser);
 					return;
 				}
 			} else if (mCurrentProgress >= maxDetectValue && mPreviousProgress <= minDetectValue &&
@@ -458,9 +446,9 @@ public class SwagPoints extends View {
 				isMin = true;
 				progress = mMin;
 //				Logger.d("Reach Min " + progress);
-				if (mOnSeekArcChangeListener != null) {
-					mOnSeekArcChangeListener
-							.onProgressChanged(this, progress, fromUser);
+				if (mOnSwagPointsChangeListener != null) {
+					mOnSwagPointsChangeListener
+							.onPointsChanged(this, progress, fromUser);
 					return;
 				}
 			}
@@ -481,13 +469,13 @@ public class SwagPoints extends View {
 		if (!isMax && !isMin) {
 			progress = (progress > mMax) ? mMax : progress;
 			progress = (progress < mMin) ? mMin : progress;
-			mProgress = progress;
+			mPoints = progress;
 
-			if (mOnSeekArcChangeListener != null) {
+			if (mOnSwagPointsChangeListener != null) {
 				progress = progress - (progress % mStep);
 
-				mOnSeekArcChangeListener
-						.onProgressChanged(this, progress, fromUser);
+				mOnSwagPointsChangeListener
+						.onPointsChanged(this, progress, fromUser);
 			}
 
 			mProgressSweep = (float) progress / mMax * mSweepAngle;
@@ -497,23 +485,28 @@ public class SwagPoints extends View {
 		}
 	}
 
-	/**
-	 * Sets a listener to receive notifications of changes to the SeekArc's
-	 * progress level. Also provides notifications of when the user starts and
-	 * stops a touch gesture within the SeekArc.
-	 *
-	 * @param l The seek bar notification listener
-	 */
-	public void setOnSeekArcChangeListener(OnSeekArcChangeListener l) {
-		mOnSeekArcChangeListener = l;
+	public interface OnSwagPointsChangeListener {
+
+		/**
+		 * Notification that the point value has changed.
+		 *
+		 * @param swagPoints The SwagPoints view whose value has changed
+		 * @param points      The current point value.
+		 * @param fromUser   True if the point change was triggered by the user.
+		 */
+		void onPointsChanged(SwagPoints swagPoints, int points, boolean fromUser);
+
+		void onStartTrackingTouch(SwagPoints swagPoints);
+
+		void onStopTrackingTouch(SwagPoints swagPoints);
 	}
 
-	public void setProgress(int progress) {
-		updateProgress(progress, false);
+	public void setPoints(int points) {
+		updateProgress(points, false);
 	}
 
-	public int getProgress() {
-		return mProgress;
+	public int getPoints() {
+		return mPoints;
 	}
 
 	public int getProgressWidth() {
@@ -573,8 +566,8 @@ public class SwagPoints extends View {
 	}
 
 	public void setTouchInSide(boolean isEnabled) {
-		int thumbHalfheight = (int) mThumb.getIntrinsicHeight() / 2;
-		int thumbHalfWidth = (int) mThumb.getIntrinsicWidth() / 2;
+		int thumbHalfheight = (int) mIndicatorIcon.getIntrinsicHeight() / 2;
+		int thumbHalfWidth = (int) mIndicatorIcon.getIntrinsicWidth() / 2;
 		mTouchInside = isEnabled;
 		if (mTouchInside) {
 			mTouchIgnoreRadius = (float) mArcRadius / 4;
