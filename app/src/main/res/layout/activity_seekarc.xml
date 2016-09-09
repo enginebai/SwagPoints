@@ -22,7 +22,6 @@
             swagpoints:arcColor="@android:color/white"
             swagpoints:progressColor="@color/colorPrimary"
             swagpoints:arcWidth="4dp"
-            swagpoints:roundEdges="false"
             android:layout_centerInParent="true"
             />
 

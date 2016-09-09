@@ -48,42 +48,10 @@ public class SwagPoints extends View {
 	private Drawable mIndicatorIcon;
 
 
-	/**
-	 * The line width of progress.
-	 */
 	private int mProgressWidth = 4;
-	private int mProgressColor;
-
-	private int mArcColor;
 	private int mArcWidth = 4;
-
 	private boolean mClockwise = true;
 	private boolean mEnabled = true;
-
-	/**
-	 * @deprecated
-	 */
-	private boolean mRoundedEdges = false;
-
-	/**
-	 * @deprecated
-	 */
-	private int mSweepAngle = 360;
-
-	/**
-	 * @deprecated
-	 */
-	private int mRotation = 0;
-
-	/**
-	 * @deprecated
-	 */
-	private int mStartAngle = 0;
-
-	/**
-	 * @deprecated
-	 */
-	private boolean mTouchInside = true;
 
 	//
 	// internal variables
@@ -109,9 +77,6 @@ public class SwagPoints extends View {
 	private RectF mArcRect = new RectF();
 	private Paint mArcPaint;
 
-	/**
-	 * @deprecated
-	 */
 	private float mProgressSweep = 0;
 	private Paint mProgressPaint;
 
@@ -126,7 +91,6 @@ public class SwagPoints extends View {
 	 * The current touch angle of arc.
 	 */
 	private double mTouchAngle;
-	private float mTouchIgnoreRadius;
 	private OnSwagPointsChangeListener mOnSwagPointsChangeListener;
 
 	public SwagPoints(Context context) {
@@ -149,8 +113,8 @@ public class SwagPoints extends View {
 		float density = getResources().getDisplayMetrics().density;
 
 		// Defaults, may need to link this into theme settings
-		mArcColor = ContextCompat.getColor(context, R.color.color_arc);
-		mProgressColor = ContextCompat.getColor(context, R.color.color_progress);
+		int arcColor = ContextCompat.getColor(context, R.color.color_arc);
+		int progressColor = ContextCompat.getColor(context, R.color.color_progress);
 		mProgressWidth = (int) (mProgressWidth * density);
 
 		mIndicatorIcon = ContextCompat.getDrawable(context, R.drawable.indicator);
@@ -175,20 +139,14 @@ public class SwagPoints extends View {
 			mStep = a.getInteger(R.styleable.SwagPoints_step, mStep);
 
 			mProgressWidth = (int) a.getDimension(R.styleable.SwagPoints_progressWidth, mProgressWidth);
-			mProgressColor = a.getColor(R.styleable.SwagPoints_progressColor, mProgressColor);
+			progressColor = a.getColor(R.styleable.SwagPoints_progressColor, progressColor);
 
 			mArcWidth = (int) a.getDimension(R.styleable.SwagPoints_arcWidth, mArcWidth);
-			mArcColor = a.getColor(R.styleable.SwagPoints_arcColor, mArcColor);
+			arcColor = a.getColor(R.styleable.SwagPoints_arcColor, arcColor);
 
 			mClockwise = a.getBoolean(R.styleable.SwagPoints_clockwise,
 					mClockwise);
 			mEnabled = a.getBoolean(R.styleable.SwagPoints_enabled, mEnabled);
-
-			mStartAngle = a.getInt(R.styleable.SwagPoints_startAngle, mStartAngle);
-			mSweepAngle = a.getInt(R.styleable.SwagPoints_sweepAngle, mSweepAngle);
-			mRotation = a.getInt(R.styleable.SwagPoints_rotation, mRotation);
-			mRoundedEdges = a.getBoolean(R.styleable.SwagPoints_roundEdges, mRoundedEdges);
-			mTouchInside = a.getBoolean(R.styleable.SwagPoints_touchInside, mTouchInside);
 			a.recycle();
 		}
 
@@ -196,28 +154,20 @@ public class SwagPoints extends View {
 		mPoints = (mPoints > mMax) ? mMax : mPoints;
 		mPoints = (mPoints < mMin) ? mMin : mPoints;
 
-		mProgressSweep = (float) mPoints / mMax * mSweepAngle;
-		mSweepAngle = (mSweepAngle > 360) ? 360 : mSweepAngle;
-		mSweepAngle = (mSweepAngle < 0) ? 0 : mSweepAngle;
-		mStartAngle = (mStartAngle > 360) ? 0 : mStartAngle;
-		mStartAngle = (mStartAngle < 0) ? 0 : mStartAngle;
+		mProgressSweep = (float) mPoints / mMax * 360;
 
 		mArcPaint = new Paint();
-		mArcPaint.setColor(mArcColor);
+		mArcPaint.setColor(arcColor);
 		mArcPaint.setAntiAlias(true);
 		mArcPaint.setStyle(Paint.Style.STROKE);
 		mArcPaint.setStrokeWidth(mArcWidth);
 
 		mProgressPaint = new Paint();
-		mProgressPaint.setColor(mProgressColor);
+		mProgressPaint.setColor(progressColor);
 		mProgressPaint.setAntiAlias(true);
 		mProgressPaint.setStyle(Paint.Style.STROKE);
 		mProgressPaint.setStrokeWidth(mProgressWidth);
 
-		if (mRoundedEdges) {
-			mArcPaint.setStrokeCap(Paint.Cap.ROUND);
-			mProgressPaint.setStrokeCap(Paint.Cap.ROUND);
-		}
 	}
 
 	@Override
@@ -237,7 +187,6 @@ public class SwagPoints extends View {
 		mArcRect.set(left, top, left + arcDiameter, top + arcDiameter);
 
 		updateIndicatorIconPosition();
-		setTouchInSide(mTouchInside);
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 	}
 
@@ -248,10 +197,8 @@ public class SwagPoints extends View {
 		}
 
 		// draw the arc and progress
-		final int arcStart = mStartAngle + ANGLE_OFFSET + mRotation;
-		final int arcSweep = mSweepAngle;
-		canvas.drawArc(mArcRect, arcStart, arcSweep, false, mArcPaint);
-		canvas.drawArc(mArcRect, arcStart, mProgressSweep, false, mProgressPaint);
+		canvas.drawArc(mArcRect, ANGLE_OFFSET, 360, false, mArcPaint);
+		canvas.drawArc(mArcRect, ANGLE_OFFSET, mProgressSweep, false, mProgressPaint);
 
 		if (mEnabled) {
 			// draw the indicator icon
@@ -308,26 +255,10 @@ public class SwagPoints extends View {
 	 * @param event MotionEvent
 	 */
 	private void updateOnTouch(MotionEvent event) {
-		boolean ignoreTouch = ignoreTouch(event.getX(), event.getY());
-		if (ignoreTouch) {
-			return;
-		}
 		setPressed(true);
 		mTouchAngle = convertTouchEventPointToAngle(event.getX(), event.getY());
 		int progress = convertAngleToProgress(mTouchAngle);
 		updatePoints(progress, true);
-	}
-
-	private boolean ignoreTouch(float xPos, float yPos) {
-		boolean ignore = false;
-		float x = xPos - mTranslateX;
-		float y = yPos - mTranslateY;
-
-		float touchRadius = (float) Math.sqrt(((x * x) + (y * y)));
-		if (touchRadius < mTouchIgnoreRadius) {
-			ignore = true;
-		}
-		return ignore;
 	}
 
 	private double convertTouchEventPointToAngle(float xPos, float yPos) {
@@ -336,9 +267,8 @@ public class SwagPoints extends View {
 		float y = yPos - mTranslateY;
 
 		x = (mClockwise) ? x : -x;
-		double angle = Math.toDegrees(Math.atan2(y, x) + (Math.PI / 2) - Math.toRadians(mRotation));
+		double angle = Math.toDegrees(Math.atan2(y, x) + (Math.PI / 2));
 		angle = (angle < 0) ? (angle + 360) : angle;
-		angle -= mStartAngle;
 //		System.out.printf("(%f, %f) %f\n", x, y, angle);
 		return angle;
 	}
@@ -351,7 +281,7 @@ public class SwagPoints extends View {
 	}
 
 	private float valuePerDegree() {
-		return (float) (mMax - mMin) / mSweepAngle;
+		return (float) (mMax - mMin) / 360;
 	}
 
 	private void updatePoints(int progress, boolean fromUser) {
@@ -359,7 +289,7 @@ public class SwagPoints extends View {
 	}
 
 	private void updateIndicatorIconPosition() {
-		int thumbAngle = (int) (mStartAngle + mProgressSweep + mRotation + 90);
+		int thumbAngle = (int) (mProgressSweep + 90);
 		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(thumbAngle)));
 		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(thumbAngle)));
 	}
@@ -460,7 +390,7 @@ public class SwagPoints extends View {
 						.onPointsChanged(this, progress, fromUser);
 			}
 
-			mProgressSweep = (float) progress / mMax * mSweepAngle;
+			mProgressSweep = (float) progress / mMax * 360;
 //			System.out.printf("%d, %f\n", progress, mProgressSweep);
 			updateIndicatorIconPosition();
 			invalidate();
@@ -507,19 +437,6 @@ public class SwagPoints extends View {
 	public void setArcWidth(int mArcWidth) {
 		this.mArcWidth = mArcWidth;
 		mArcPaint.setStrokeWidth(mArcWidth);
-	}
-
-	public void setTouchInSide(boolean isEnabled) {
-		int thumbHalfheight = (int) mIndicatorIcon.getIntrinsicHeight() / 2;
-		int thumbHalfWidth = (int) mIndicatorIcon.getIntrinsicWidth() / 2;
-		mTouchInside = isEnabled;
-		if (mTouchInside) {
-			mTouchIgnoreRadius = (float) mArcRadius / 4;
-		} else {
-			// Don't use the exact radius makes interaction too tricky
-			mTouchIgnoreRadius = mArcRadius
-					- Math.min(thumbHalfWidth, thumbHalfheight);
-		}
 	}
 
 	public void setClockwise(boolean isClockwise) {
@@ -578,5 +495,9 @@ public class SwagPoints extends View {
 
 	public void setStep(int step) {
 		mStep = step;
+	}
+
+	public void setOnSwagPointsChangeListener(OnSwagPointsChangeListener onSwagPointsChangeListener) {
+		mOnSwagPointsChangeListener = onSwagPointsChangeListener;
 	}
 }

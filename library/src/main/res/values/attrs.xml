@@ -17,13 +17,6 @@
         <attr name="clockwise" format="boolean" />
         <attr name="enabled" format="boolean" />
 
-        <!-- deprecated -->
-        <attr name="roundEdges" format="boolean" />
-        <attr name="rotation" format="integer" />
-        <attr name="touchInside" format="boolean" />
-        <attr name="startAngle" format="integer" />
-        <attr name="sweepAngle" format="integer" />
-
     </declare-styleable>
 
     <declare-styleable name="SwagPointsTheme">
