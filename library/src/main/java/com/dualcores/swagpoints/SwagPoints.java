@@ -313,9 +313,9 @@ public class SwagPoints extends View {
 			return;
 		}
 		setPressed(true);
-		mTouchAngle = getTouchDegrees(event.getX(), event.getY());
-		int progress = getProgressForAngle(mTouchAngle);
-		onProgressRefresh(progress, true);
+		mTouchAngle = convertTouchEventPointToAngle(event.getX(), event.getY());
+		int progress = convertAngleToProgress(mTouchAngle);
+		updatePoints(progress, true);
 	}
 
 	private boolean ignoreTouch(float xPos, float yPos) {
@@ -330,30 +330,23 @@ public class SwagPoints extends View {
 		return ignore;
 	}
 
-	private double getTouchDegrees(float xPos, float yPos) {
+	private double convertTouchEventPointToAngle(float xPos, float yPos) {
+		// transform touch coordinate into component coordinate
 		float x = xPos - mTranslateX;
 		float y = yPos - mTranslateY;
-		//invert the x-coord if we are rotating anti-clockwise
+
 		x = (mClockwise) ? x : -x;
-		// convert to arc Angle
-		double angle = Math.toDegrees(Math.atan2(y, x)
-				+ (Math.PI / 2)
-				- Math.toRadians(mRotation));
-		if (angle < 0) {
-			angle = 360 + angle;
-		}
+		double angle = Math.toDegrees(Math.atan2(y, x) + (Math.PI / 2) - Math.toRadians(mRotation));
+		angle = (angle < 0) ? (angle + 360) : angle;
 		angle -= mStartAngle;
 //		System.out.printf("(%f, %f) %f\n", x, y, angle);
 		return angle;
 	}
 
-	private int getProgressForAngle(double angle) {
+	private int convertAngleToProgress(double angle) {
 		int touchProgress = (int) Math.round(valuePerDegree() * angle);
-
-		touchProgress = (touchProgress < mMin) ? INVALID_VALUE
-				: touchProgress;
-		touchProgress = (touchProgress > mMax) ? INVALID_VALUE
-				: touchProgress;
+		touchProgress = (touchProgress < mMin) ? INVALID_VALUE : touchProgress;
+		touchProgress = (touchProgress > mMax) ? INVALID_VALUE : touchProgress;
 		return touchProgress;
 	}
 
@@ -361,11 +354,11 @@ public class SwagPoints extends View {
 		return (float) (mMax - mMin) / mSweepAngle;
 	}
 
-	private void onProgressRefresh(int progress, boolean fromUser) {
+	private void updatePoints(int progress, boolean fromUser) {
 		updateProgress(progress, fromUser);
 	}
 
-	private void updateThumbPosition() {
+	private void updateIndicatorIconPosition() {
 		int thumbAngle = (int) (mStartAngle + mProgressSweep + mRotation + 90);
 		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(thumbAngle)));
 		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(thumbAngle)));
@@ -373,7 +366,7 @@ public class SwagPoints extends View {
 
 	private void updateProgress(int progress, boolean fromUser) {
 
-		// 要偵測的區域
+		// detect points change closed to max or min
 		final int maxDetectValue = (int) ((double) mMax * 0.95);
 		final int minDetectValue = (int) ((double) mMax * 0.05) + mMin;
 //		System.out.printf("(%d, %d) / (%d, %d)\n", mMax, mMin, maxDetectValue, minDetectValue);
@@ -383,7 +376,8 @@ public class SwagPoints extends View {
 			return;
 		}
 
-		// 預防在靠近原點點到直接變成最大值
+		// avoid accidentally touch to become max from original point
+		// 避免在靠近原點點到直接變成最大值
 		if (progress > maxDetectValue && mPreviousProgress == INVALID_VALUE) {
 //			System.out.printf("Skip (%d) %.0f -> %.0f %s\n",
 //					progress, mPreviousProgress, mCurrentProgress, isMax ? "Max" : "");
@@ -397,6 +391,7 @@ public class SwagPoints extends View {
 					isMax ? "Max" : "",
 					isMin ? "Min" : "");
 
+		// record previous and current progress change
 		// 紀錄目前和前一個進度變化
 		if (mUpdateTimes == 1) {
 			mCurrentProgress = progress;
@@ -407,6 +402,14 @@ public class SwagPoints extends View {
 
 //		System.out.printf("New value (%.0f, %.0f)\n", mPreviousProgress, mCurrentProgress);
 
+		/**
+		 * Determine whether reach max or min to lock point update event.
+		 *
+		 * When reaching max, the progress will drop from max (or maxDetectPoints ~ max
+		 * to min (or min ~ minDetectPoints) and vice versa.
+		 *
+		 * If reach max or min, stop increasing / decreasing to avoid exceeding the max / min.
+		 */
 		// 判斷超過最大值或最小值，最大最小值不重複判斷
 		// 用數值範圍判斷預防轉太快直接略過最大最小值。
 		// progress變化可能從98 -> 0/1 or 0/1 -> 98/97，而不會過0或100
@@ -434,13 +437,12 @@ public class SwagPoints extends View {
 			}
 		}
 
-		// 到達最大值後，從最大值往回轉，就可以解除鎖定
+		// Detect whether decreasing from max or increasing from min, to unlock the update event.
+		// Make sure to check in detect range only.
 		if (isMax & (mCurrentProgress < mPreviousProgress) && mCurrentProgress >= maxDetectValue) {
 //			Logger.d("Unlock max");
 			isMax = false;
 		}
-
-		// 到達最小值後，從最小值往前轉，就可以解除鎖定
 		if (isMin && (mPreviousProgress < mCurrentProgress) && mPreviousProgress <= minDetectValue) {
 //			Logger.d("Unlock min");
 			isMin = false;
@@ -460,15 +462,9 @@ public class SwagPoints extends View {
 
 			mProgressSweep = (float) progress / mMax * mSweepAngle;
 //			System.out.printf("%d, %f\n", progress, mProgressSweep);
-			updateThumbPosition();
+			updateIndicatorIconPosition();
 			invalidate();
 		}
-	}
-
-	private void updateIndicatorIconPosition() {
-		int arcStart = (int) mProgressSweep + mStartAngle + mRotation + 90;
-		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(arcStart)));
-		mIndicatorIconY = (int) (mArcRadius * Math.sin(Math.toRadians(arcStart)));
 	}
 
 	public interface OnSwagPointsChangeListener {
@@ -511,44 +507,6 @@ public class SwagPoints extends View {
 	public void setArcWidth(int mArcWidth) {
 		this.mArcWidth = mArcWidth;
 		mArcPaint.setStrokeWidth(mArcWidth);
-	}
-
-	public int getArcRotation() {
-		return mRotation;
-	}
-
-	public void setArcRotation(int mRotation) {
-		this.mRotation = mRotation;
-		updateThumbPosition();
-	}
-
-	public int getStartAngle() {
-		return mStartAngle;
-	}
-
-	public void setStartAngle(int mStartAngle) {
-		this.mStartAngle = mStartAngle;
-		updateThumbPosition();
-	}
-
-	public int getSweepAngle() {
-		return mSweepAngle;
-	}
-
-	public void setSweepAngle(int mSweepAngle) {
-		this.mSweepAngle = mSweepAngle;
-		updateThumbPosition();
-	}
-
-	public void setRoundedEdges(boolean isEnabled) {
-		mRoundedEdges = isEnabled;
-		if (mRoundedEdges) {
-			mArcPaint.setStrokeCap(Paint.Cap.ROUND);
-			mProgressPaint.setStrokeCap(Paint.Cap.ROUND);
-		} else {
-			mArcPaint.setStrokeCap(Paint.Cap.SQUARE);
-			mProgressPaint.setStrokeCap(Paint.Cap.SQUARE);
-		}
 	}
 
 	public void setTouchInSide(boolean isEnabled) {
