@@ -80,6 +80,10 @@ public class SwagPoints extends View {
 	private float mProgressSweep = 0;
 	private Paint mProgressPaint;
 
+	private float mTextSize = 12;
+	private int mTextColor;
+	private Paint mTextPaint;
+
 	private int mTranslateX;
 	private int mTranslateY;
 
@@ -115,7 +119,10 @@ public class SwagPoints extends View {
 		// Defaults, may need to link this into theme settings
 		int arcColor = ContextCompat.getColor(context, R.color.color_arc);
 		int progressColor = ContextCompat.getColor(context, R.color.color_progress);
+		int textColor = ContextCompat.getColor(context, R.color.color_text);
 		mProgressWidth = (int) (mProgressWidth * density);
+		mArcWidth = (int) (mArcWidth * density);
+		mTextSize = (int) (mTextSize * density);
 
 		mIndicatorIcon = ContextCompat.getDrawable(context, R.drawable.indicator);
 
@@ -144,6 +151,9 @@ public class SwagPoints extends View {
 			mArcWidth = (int) a.getDimension(R.styleable.SwagPoints_arcWidth, mArcWidth);
 			arcColor = a.getColor(R.styleable.SwagPoints_arcColor, arcColor);
 
+			mTextSize = (int) a.getDimension(R.styleable.SwagPoints_textSize, mTextSize);
+			mTextColor = a.getColor(R.styleable.SwagPoints_textColor, mTextColor);
+
 			mClockwise = a.getBoolean(R.styleable.SwagPoints_clockwise,
 					mClockwise);
 			mEnabled = a.getBoolean(R.styleable.SwagPoints_enabled, mEnabled);
@@ -168,6 +178,11 @@ public class SwagPoints extends View {
 		mProgressPaint.setStyle(Paint.Style.STROKE);
 		mProgressPaint.setStrokeWidth(mProgressWidth);
 
+		mTextPaint = new Paint();
+		mTextPaint.setColor(textColor);
+		mTextPaint.setAntiAlias(true);
+		mTextPaint.setStyle(Paint.Style.FILL);
+		mTextPaint.setTextSize(mTextSize);
 	}
 
 	@Override
@@ -195,6 +210,9 @@ public class SwagPoints extends View {
 		if (!mClockwise) {
 			canvas.scale(-1, 1, mArcRect.centerX(), mArcRect.centerY());
 		}
+
+		// draw the text
+		canvas.drawText(String.valueOf(mPoints), mArcRect.centerX(), mArcRect.centerY(), mTextPaint);
 
 		// draw the arc and progress
 		canvas.drawArc(mArcRect, ANGLE_OFFSET, 360, false, mArcPaint);

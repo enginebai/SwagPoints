@@ -14,6 +14,9 @@
         <attr name="arcWidth" format="dimension" />
         <attr name="arcColor" format="color" />
 
+        <attr name="textSize" format="dimension"/>
+        <attr name="textColor" format="color"/>
+
         <attr name="clockwise" format="boolean" />
         <attr name="enabled" format="boolean" />
 

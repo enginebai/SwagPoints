@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="color_arc">@android:color/white</color>
+    <color name="color_text">@android:color/black</color>
     <color name="color_progress">#00e6d2</color>
 </resources>
