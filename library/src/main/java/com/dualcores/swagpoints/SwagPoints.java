@@ -48,8 +48,8 @@ public class SwagPoints extends View {
 	private Drawable mIndicatorIcon;
 
 
-	private int mProgressWidth = 4;
-	private int mArcWidth = 4;
+	private int mProgressWidth = 12;
+	private int mArcWidth = 12;
 	private boolean mClockwise = true;
 	private boolean mEnabled = true;
 
@@ -104,12 +104,7 @@ public class SwagPoints extends View {
 
 	public SwagPoints(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		init(context, attrs, R.attr.swagPointsStyle);
-	}
-
-	public SwagPoints(Context context, AttributeSet attrs, int defStyle) {
-		super(context, attrs, defStyle);
-		init(context, attrs, defStyle);
+		init(context, attrs, 0);
 	}
 
 	private void init(Context context, AttributeSet attrs, int defStyle) {

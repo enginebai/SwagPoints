@@ -1,22 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:swagpoints="http://schemas.android.com/apk/res-auto"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent">
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:swagpoints="http://schemas.android.com/apk/res-auto"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/colorPrimary"
+    >
 
-        <com.dualcores.swagpoints.SwagPoints
-            android:id="@+id/seekbar_point"
-            android:layout_width="match_parent"
-            android:layout_height="280dp"
-            android:padding="40dp"
-            swagpoints:indicatorIcon="@drawable/indicator"
-            swagpoints:clockwise="true"
-            swagpoints:arcColor="@android:color/darker_gray"
-            swagpoints:progressColor="@color/colorPrimary"
-            swagpoints:textSize="20sp"
-            swagpoints:arcWidth="4dp"
-            android:layout_gravity="center"
-            />
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimaryDark"
+        />
 
-</LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/toolbar"
+        android:orientation="vertical"
+        >
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/text_description"
+        android:textColor="@color/colorText"
+        android:textSize="20sp"
+        android:layout_margin="32dp"
+        />
+
+    <com.dualcores.swagpoints.SwagPoints
+        android:id="@+id/seekbar_point"
+        android:layout_width="match_parent"
+        android:layout_height="340dp"
+        android:layout_gravity="center"
+        android:padding="64dp"
+        swagpoints:clockwise="true"
+        swagpoints:textSize="72sp"
+        />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom"
+        android:background="@color/colorAction"
+        android:baselineAligned="false"
+        android:gravity="bottom"
+        android:orientation="horizontal"
+        android:layout_alignParentBottom="true"
+        >
+
+        <ImageButton
+            style="@style/ActionButton"
+            android:src="@drawable/cancel"/>
+
+        <ImageButton
+            style="@style/ActionButton"
+            android:src="@drawable/ok"/>
+
+    </LinearLayout>
+
+</RelativeLayout>

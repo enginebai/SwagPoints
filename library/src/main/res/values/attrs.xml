@@ -22,8 +22,4 @@
 
     </declare-styleable>
 
-    <declare-styleable name="SwagPointsTheme">
-        <attr name="swagPointsStyle" format="reference"/>
-    </declare-styleable>
-
 </resources>

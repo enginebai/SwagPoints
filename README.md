@@ -1,5 +1,6 @@
 ## Description
 
+
 ## Gradle
 
 ```java
@@ -27,7 +28,7 @@ dependencies {
     />
 ```
 
-* All attributes supported:
+* All custom supported attributes:
 
 ```xml
 <declare-styleable name="SwagPoints">
