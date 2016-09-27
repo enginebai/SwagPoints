@@ -30,13 +30,20 @@
         />
 
     <com.dualcores.swagpoints.SwagPoints
+        xmlns:swagpoints="http://schemas.android.com/apk/res-auto"
         android:id="@+id/seekbar_point"
         android:layout_width="match_parent"
         android:layout_height="340dp"
         android:layout_gravity="center"
         android:padding="64dp"
-        swagpoints:clockwise="true"
+        swagpoints:step="100"
+        swagpoints:progressColor="@color/color_progress"
+        swagpoints:progressWidth="12dp"
+        swagpoints:arcColor="@color/color_arc"
+        swagpoints:arcWidth="8dp"
         swagpoints:textSize="72sp"
+        swagpoints:textColor="@color/colorText"
+        swagpoints:indicatorIcon="@drawable/indicator"
         />
     </LinearLayout>
 
