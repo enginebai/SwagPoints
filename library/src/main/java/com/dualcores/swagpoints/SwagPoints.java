@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
@@ -83,6 +84,7 @@ public class SwagPoints extends View {
 	private float mTextSize = 12;
 	private int mTextColor;
 	private Paint mTextPaint;
+	private Rect mTextRect = new Rect();
 
 	private int mTranslateX;
 	private int mTranslateY;
@@ -207,7 +209,12 @@ public class SwagPoints extends View {
 		}
 
 		// draw the text
-		canvas.drawText(String.valueOf(mPoints), mArcRect.centerX(), mArcRect.centerY(), mTextPaint);
+		String textPoint = String.valueOf(mPoints);
+		mTextPaint.getTextBounds(textPoint, 0, textPoint.length(), mTextRect);
+		// center the text
+		int xPos = canvas.getWidth() / 2 - mTextRect.width() / 2;
+		int yPos = (int)((mArcRect.centerY()) - ((mTextPaint.descent() + mTextPaint.ascent()) / 2));
+		canvas.drawText(String.valueOf(mPoints), xPos, yPos, mTextPaint);
 
 		// draw the arc and progress
 		canvas.drawArc(mArcRect, ANGLE_OFFSET, 360, false, mArcPaint);

@@ -1,5 +1,11 @@
 apply plugin: 'com.android.library'
 
+ext {
+    PUBLISH_GROUP_ID = 'com.dualcores.swagpoints'
+    PUBLISH_ARTIFACT_ID = 'swagpoints'
+    PUBLISH_VERSION = '1.0.0'
+}
+
 android {
     compileSdkVersion 24
     buildToolsVersion "24.0.0"
@@ -23,3 +29,7 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.0.0'
 }
+
+// or use the remote copy to keep update with latest changes
+apply from: 'https://raw.githubusercontent.com/blundell/release-android-library/master/android-release-aar.gradle'
+

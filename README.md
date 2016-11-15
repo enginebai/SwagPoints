@@ -1,5 +1,6 @@
 # SwagPoints
 [![License](https://img.shields.io/badge/license-Apache%202-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+[ ![Download](https://api.bintray.com/packages/enginebai/DualCores/SwagPoints/images/download.svg) ](https://bintray.com/enginebai/DualCores/SwagPoints/_latestVersion)
 
 **SwagPoints** - An Android custom circular SeekBar that supports max/min range and step settings.
 
@@ -10,7 +11,7 @@
 ```java
 dependencies {
 	...
-	compile 'com.dualcores.swagpoints:x.y.z'
+	compile 'com.dualcores.swagpoints:swagpoints:1.0.0'
 }
 ```
 
