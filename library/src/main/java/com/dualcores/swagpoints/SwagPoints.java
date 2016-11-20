@@ -101,15 +101,15 @@ public class SwagPoints extends View {
 
 	public SwagPoints(Context context) {
 		super(context);
-		init(context, null, 0);
+		init(context, null);
 	}
 
 	public SwagPoints(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		init(context, attrs, 0);
+		init(context, attrs);
 	}
 
-	private void init(Context context, AttributeSet attrs, int defStyle) {
+	private void init(Context context, AttributeSet attrs) {
 
 		float density = getResources().getDisplayMetrics().density;
 
@@ -126,7 +126,7 @@ public class SwagPoints extends View {
 		if (attrs != null) {
 			// Attribute initialization
 			final TypedArray a = context.obtainStyledAttributes(attrs,
-					R.styleable.SwagPoints, defStyle, 0);
+					R.styleable.SwagPoints, 0, 0);
 
 			Drawable indicatorIcon = a.getDrawable(R.styleable.SwagPoints_indicatorIcon);
 			if (indicatorIcon != null)
