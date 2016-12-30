@@ -81,8 +81,7 @@ public class SwagPoints extends View {
 	private float mProgressSweep = 0;
 	private Paint mProgressPaint;
 
-	private float mTextSize = 12;
-	private int mTextColor;
+	private float mTextSize = 72;
 	private Paint mTextPaint;
 	private Rect mTextRect = new Rect();
 
@@ -149,7 +148,7 @@ public class SwagPoints extends View {
 			arcColor = a.getColor(R.styleable.SwagPoints_arcColor, arcColor);
 
 			mTextSize = (int) a.getDimension(R.styleable.SwagPoints_textSize, mTextSize);
-			mTextColor = a.getColor(R.styleable.SwagPoints_textColor, mTextColor);
+			textColor = a.getColor(R.styleable.SwagPoints_textColor, textColor);
 
 			mClockwise = a.getBoolean(R.styleable.SwagPoints_clockwise,
 					mClockwise);
@@ -213,7 +212,7 @@ public class SwagPoints extends View {
 		mTextPaint.getTextBounds(textPoint, 0, textPoint.length(), mTextRect);
 		// center the text
 		int xPos = canvas.getWidth() / 2 - mTextRect.width() / 2;
-		int yPos = (int)((mArcRect.centerY()) - ((mTextPaint.descent() + mTextPaint.ascent()) / 2));
+		int yPos = (int) ((mArcRect.centerY()) - ((mTextPaint.descent() + mTextPaint.ascent()) / 2));
 		canvas.drawText(String.valueOf(mPoints), xPos, yPos, mTextPaint);
 
 		// draw the arc and progress
@@ -272,13 +271,14 @@ public class SwagPoints extends View {
 
 	/**
 	 * Update all the UI components on touch events.
+	 *
 	 * @param event MotionEvent
 	 */
 	private void updateOnTouch(MotionEvent event) {
 		setPressed(true);
 		mTouchAngle = convertTouchEventPointToAngle(event.getX(), event.getY());
 		int progress = convertAngleToProgress(mTouchAngle);
-		updatePoints(progress, true);
+		updateProgress(progress, true);
 	}
 
 	private double convertTouchEventPointToAngle(float xPos, float yPos) {
@@ -304,10 +304,6 @@ public class SwagPoints extends View {
 		return (float) (mMax - mMin) / 360;
 	}
 
-	private void updatePoints(int progress, boolean fromUser) {
-		updateProgress(progress, fromUser);
-	}
-
 	private void updateIndicatorIconPosition() {
 		int thumbAngle = (int) (mProgressSweep + 90);
 		mIndicatorIconX = (int) (mArcRadius * Math.cos(Math.toRadians(thumbAngle)));
@@ -329,8 +325,8 @@ public class SwagPoints extends View {
 		// avoid accidentally touch to become max from original point
 		// 避免在靠近原點點到直接變成最大值
 		if (progress > maxDetectValue && mPreviousProgress == INVALID_VALUE) {
-//			System.out.printf("Skip (%d) %.0f -> %.0f %s\n",
-//					progress, mPreviousProgress, mCurrentProgress, isMax ? "Max" : "");
+			System.out.printf("Skip (%d) %.0f -> %.0f %s\n",
+					progress, mPreviousProgress, mCurrentProgress, isMax ? "Max" : "");
 			return;
 		}
 
@@ -350,7 +346,8 @@ public class SwagPoints extends View {
 			mCurrentProgress = progress;
 		}
 
-//		System.out.printf("New value (%.0f, %.0f)\n", mPreviousProgress, mCurrentProgress);
+		if (mPreviousProgress != mCurrentProgress)
+			System.out.printf("New value (%.0f, %.0f)\n", mPreviousProgress, mCurrentProgress);
 
 		/**
 		 * Determine whether reach max or min to lock point update event.
@@ -368,7 +365,8 @@ public class SwagPoints extends View {
 					mPreviousProgress > mCurrentProgress) {
 				isMax = true;
 				progress = mMax;
-//				Logger.d("Reach Max " + progress);
+				mPoints = mMax;
+				System.out.println("Reach Max " + progress);
 				if (mOnSwagPointsChangeListener != null) {
 					mOnSwagPointsChangeListener
 							.onPointsChanged(this, progress, fromUser);
@@ -378,37 +376,42 @@ public class SwagPoints extends View {
 					mCurrentProgress > mPreviousProgress) {
 				isMin = true;
 				progress = mMin;
-//				Logger.d("Reach Min " + progress);
+				mPoints = mMin;
+				System.out.println("Reach Min " + progress);
 				if (mOnSwagPointsChangeListener != null) {
 					mOnSwagPointsChangeListener
 							.onPointsChanged(this, progress, fromUser);
 					return;
 				}
 			}
-		}
+			invalidate();
+		} else {
 
-		// Detect whether decreasing from max or increasing from min, to unlock the update event.
-		// Make sure to check in detect range only.
-		if (isMax & (mCurrentProgress < mPreviousProgress) && mCurrentProgress >= maxDetectValue) {
-//			Logger.d("Unlock max");
-			isMax = false;
-		}
-		if (isMin && (mPreviousProgress < mCurrentProgress) && mPreviousProgress <= minDetectValue) {
-//			Logger.d("Unlock min");
-			isMin = false;
+			// Detect whether decreasing from max or increasing from min, to unlock the update event.
+			// Make sure to check in detect range only.
+			if (isMax & (mCurrentProgress < mPreviousProgress) && mCurrentProgress >= maxDetectValue) {
+				System.out.println("Unlock max");
+				isMax = false;
+			}
+			if (isMin && (mPreviousProgress < mCurrentProgress) && mPreviousProgress <= minDetectValue) {
+				System.out.println("Unlock min");
+				isMin = false;
+			}
 		}
 
 		if (!isMax && !isMin) {
 			progress = (progress > mMax) ? mMax : progress;
 			progress = (progress < mMin) ? mMin : progress;
-			mPoints = progress;
 
+			// 不能直接拿progress來做step
+			mPoints = progress - (progress % mStep);
 			if (mOnSwagPointsChangeListener != null) {
 				progress = progress - (progress % mStep);
 
 				mOnSwagPointsChangeListener
 						.onPointsChanged(this, progress, fromUser);
 			}
+			System.out.printf("-- %d, %d\n", progress, mPoints);
 
 			mProgressSweep = (float) progress / mMax * 360;
 //			System.out.printf("%d, %f\n", progress, mProgressSweep);
@@ -423,7 +426,7 @@ public class SwagPoints extends View {
 		 * Notification that the point value has changed.
 		 *
 		 * @param swagPoints The SwagPoints view whose value has changed
-		 * @param points      The current point value.
+		 * @param points     The current point value.
 		 * @param fromUser   True if the point change was triggered by the user.
 		 */
 		void onPointsChanged(SwagPoints swagPoints, int points, boolean fromUser);
@@ -490,6 +493,17 @@ public class SwagPoints extends View {
 
 	public void setArcColor(int color) {
 		mArcPaint.setColor(color);
+		invalidate();
+	}
+
+	public void setTextColor(int textColor) {
+		mTextPaint.setColor(textColor);
+		invalidate();
+	}
+
+	public void setTextSize(float textSize) {
+		mTextSize = textSize;
+		mTextPaint.setTextSize(mTextSize);
 		invalidate();
 	}
 
