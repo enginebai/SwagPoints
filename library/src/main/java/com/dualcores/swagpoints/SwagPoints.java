@@ -160,7 +160,7 @@ public class SwagPoints extends View {
 		mPoints = (mPoints > mMax) ? mMax : mPoints;
 		mPoints = (mPoints < mMin) ? mMin : mPoints;
 
-		mProgressSweep = (float) mPoints / mMax * 360;
+		mProgressSweep = (float) mPoints / valuePerDegree();
 
 		mArcPaint = new Paint();
 		mArcPaint.setColor(arcColor);
@@ -213,6 +213,7 @@ public class SwagPoints extends View {
 		// center the text
 		int xPos = canvas.getWidth() / 2 - mTextRect.width() / 2;
 		int yPos = (int) ((mArcRect.centerY()) - ((mTextPaint.descent() + mTextPaint.ascent()) / 2));
+//		Log.d("onDraw", String.valueOf(mPoints));
 		canvas.drawText(String.valueOf(mPoints), xPos, yPos, mTextPaint);
 
 		// draw the arc and progress
@@ -236,7 +237,7 @@ public class SwagPoints extends View {
 				case MotionEvent.ACTION_DOWN:
 					if (mOnSwagPointsChangeListener != null)
 						mOnSwagPointsChangeListener.onStartTrackingTouch(this);
-					updateOnTouch(event);
+//					updateOnTouch(event);
 					break;
 				case MotionEvent.ACTION_MOVE:
 					updateOnTouch(event);
@@ -294,14 +295,11 @@ public class SwagPoints extends View {
 	}
 
 	private int convertAngleToProgress(double angle) {
-		int touchProgress = (int) Math.round(valuePerDegree() * angle);
-		touchProgress = (touchProgress < mMin) ? INVALID_VALUE : touchProgress;
-		touchProgress = (touchProgress > mMax) ? INVALID_VALUE : touchProgress;
-		return touchProgress;
+		return (int) Math.round(valuePerDegree() * angle);
 	}
 
 	private float valuePerDegree() {
-		return (float) (mMax - mMin) / 360;
+		return (float) (mMax) / 360.0f;
 	}
 
 	private void updateIndicatorIconPosition() {
@@ -325,17 +323,11 @@ public class SwagPoints extends View {
 		// avoid accidentally touch to become max from original point
 		// 避免在靠近原點點到直接變成最大值
 		if (progress > maxDetectValue && mPreviousProgress == INVALID_VALUE) {
-			System.out.printf("Skip (%d) %.0f -> %.0f %s\n",
-					progress, mPreviousProgress, mCurrentProgress, isMax ? "Max" : "");
+//			System.out.printf("Skip (%d) %.0f -> %.0f %s\n",
+//					progress, mPreviousProgress, mCurrentProgress, isMax ? "Max" : "");
 			return;
 		}
 
-		if (mPreviousProgress != mCurrentProgress)
-			System.out.printf("Progress (%d)(%f) %.0f -> %.0f (%s, %s)\n",
-					progress, mTouchAngle,
-					mPreviousProgress, mCurrentProgress,
-					isMax ? "Max" : "",
-					isMin ? "Min" : "");
 
 		// record previous and current progress change
 		// 紀錄目前和前一個進度變化
@@ -346,8 +338,15 @@ public class SwagPoints extends View {
 			mCurrentProgress = progress;
 		}
 
-		if (mPreviousProgress != mCurrentProgress)
-			System.out.printf("New value (%.0f, %.0f)\n", mPreviousProgress, mCurrentProgress);
+//		if (mPreviousProgress != mCurrentProgress)
+//			System.out.printf("Progress (%d)(%f) %.0f -> %.0f (%s, %s)\n",
+//					progress, mTouchAngle,
+//					mPreviousProgress, mCurrentProgress,
+//					isMax ? "Max" : "",
+//					isMin ? "Min" : "");
+
+		// 不能直接拿progress來做step
+		mPoints = progress - (progress % mStep);
 
 		/**
 		 * Determine whether reach max or min to lock point update event.
@@ -366,18 +365,19 @@ public class SwagPoints extends View {
 				isMax = true;
 				progress = mMax;
 				mPoints = mMax;
-				System.out.println("Reach Max " + progress);
+//				System.out.println("Reach Max " + progress);
 				if (mOnSwagPointsChangeListener != null) {
 					mOnSwagPointsChangeListener
 							.onPointsChanged(this, progress, fromUser);
 					return;
 				}
-			} else if (mCurrentProgress >= maxDetectValue && mPreviousProgress <= minDetectValue &&
-					mCurrentProgress > mPreviousProgress) {
+			} else if ((mCurrentProgress >= maxDetectValue
+					&& mPreviousProgress <= minDetectValue
+					&& mCurrentProgress > mPreviousProgress) || mCurrentProgress <= mMin) {
 				isMin = true;
 				progress = mMin;
 				mPoints = mMin;
-				System.out.println("Reach Min " + progress);
+//				Log.d("Reach", "Reach Min " + progress);
 				if (mOnSwagPointsChangeListener != null) {
 					mOnSwagPointsChangeListener
 							.onPointsChanged(this, progress, fromUser);
@@ -390,11 +390,14 @@ public class SwagPoints extends View {
 			// Detect whether decreasing from max or increasing from min, to unlock the update event.
 			// Make sure to check in detect range only.
 			if (isMax & (mCurrentProgress < mPreviousProgress) && mCurrentProgress >= maxDetectValue) {
-				System.out.println("Unlock max");
+//				System.out.println("Unlock max");
 				isMax = false;
 			}
-			if (isMin && (mPreviousProgress < mCurrentProgress) && mPreviousProgress <= minDetectValue) {
-				System.out.println("Unlock min");
+			if (isMin
+					&& (mPreviousProgress < mCurrentProgress)
+					&& mPreviousProgress <= minDetectValue && mCurrentProgress <= minDetectValue
+					&& mPoints >= mMin) {
+//				Log.d("Unlock", String.format("Unlock min %.0f, %.0f\n", mPreviousProgress, mCurrentProgress));
 				isMin = false;
 			}
 		}
@@ -403,18 +406,16 @@ public class SwagPoints extends View {
 			progress = (progress > mMax) ? mMax : progress;
 			progress = (progress < mMin) ? mMin : progress;
 
-			// 不能直接拿progress來做step
-			mPoints = progress - (progress % mStep);
 			if (mOnSwagPointsChangeListener != null) {
 				progress = progress - (progress % mStep);
 
 				mOnSwagPointsChangeListener
 						.onPointsChanged(this, progress, fromUser);
 			}
-			System.out.printf("-- %d, %d\n", progress, mPoints);
 
-			mProgressSweep = (float) progress / mMax * 360;
-//			System.out.printf("%d, %f\n", progress, mProgressSweep);
+			mProgressSweep = (float) progress / valuePerDegree();
+//			if (mPreviousProgress != mCurrentProgress)
+//				System.out.printf("-- %d, %d, %f\n", progress, mPoints, mProgressSweep);
 			updateIndicatorIconPosition();
 			invalidate();
 		}
@@ -437,6 +438,8 @@ public class SwagPoints extends View {
 	}
 
 	public void setPoints(int points) {
+		points = points > mMax ? mMax : points;
+		points = points < mMin ? mMin : points;
 		updateProgress(points, false);
 	}
 
@@ -512,6 +515,8 @@ public class SwagPoints extends View {
 	}
 
 	public void setMax(int mMax) {
+		if (mMax <= mMin)
+			throw new IllegalArgumentException("Max should not be less than min.");
 		this.mMax = mMax;
 	}
 
@@ -520,6 +525,8 @@ public class SwagPoints extends View {
 	}
 
 	public void setMin(int min) {
+		if (mMax <= mMin)
+			throw new IllegalArgumentException("Min should not be greater than max.");
 		mMin = min;
 	}
 
