@@ -371,7 +371,7 @@ public class SwagPoints extends View {
 							.onPointsChanged(this, progress, fromUser);
 					return;
 				}
-			} else if ((mCurrentProgress >= maxDetectValue
+			} else if ((mCurrentProgress > maxDetectValue
 					&& mPreviousProgress <= minDetectValue
 					&& mCurrentProgress > mPreviousProgress) || mCurrentProgress <= mMin) {
 				isMin = true;
